@@ -13,7 +13,7 @@ const getTopSearch = async () => {
         return data;
       }
     }
-    const { data } = await axios.get(`${baseUrl}/top-search`);
+    const { data } = await axios.get(`${baseUrl}/api/top-search`);
     const results = data?.results || [];
     if (results.length) {
       localStorage.setItem(

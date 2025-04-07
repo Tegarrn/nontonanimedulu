@@ -23,7 +23,7 @@ function Search() {
         const fetchSearch = async () => {
             setLoading(true);
             try {
-                const data = await getSearch(keyword);
+                const data = await getSearch(keyword,page);
                 setSearchData(data.data);
                 setTotalPages(data.totalPage);
                 setLoading(false);

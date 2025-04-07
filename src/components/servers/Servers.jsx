@@ -6,6 +6,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import BouncingLoader from "../ui/bouncingloader/Bouncingloader";
 import "./Servers.css";
+import { useEffect } from "react";
 
 function Servers({
   servers,
@@ -17,6 +18,30 @@ function Servers({
   const subServers = servers?.filter((server) => server.type === "sub") || [];
   const dubServers = servers?.filter((server) => server.type === "dub") || [];
   const rawServers = servers?.filter((server) => server.type === "raw") || [];
+
+  useEffect(() => {
+    const savedServerName = localStorage.getItem("server_name");
+
+    if (savedServerName) {
+      const matchingServer = servers?.find(
+        (server) => server.serverName === savedServerName
+      );
+
+      if (matchingServer) {
+        setActiveServerId(matchingServer.data_id);
+      } else if (servers && servers.length > 0) {
+        setActiveServerId(servers[0].data_id);
+      }
+    } else if (servers && servers.length > 0) {
+      setActiveServerId(servers[0].data_id);
+    }
+  }, [servers]);
+
+  const handleServerSelect = (server) => {
+    setActiveServerId(server.data_id);
+    localStorage.setItem("server_name", server.serverName);
+    localStorage.setItem("server_type", server.type);
+  };
   return (
     <div className="relative bg-[#11101A] p-4 w-full min-h-[100px] flex justify-center items-center max-[1200px]:bg-[#14151A]">
       {serverLoading ? (
@@ -62,7 +87,7 @@ function Servers({
                           ? "bg-[#ffbade] text-black"
                           : "bg-[#373646] text-white"
                       } max-[700px]:px-3`}
-                      onClick={() => setActiveServerId(item?.data_id)}
+                      onClick={() => handleServerSelect(item)}
                     >
                       <p className="text-[13px] font-semibold">
                         {item.serverName}
@@ -94,7 +119,7 @@ function Servers({
                           ? "bg-[#ffbade] text-black"
                           : "bg-[#373646] text-white"
                       } max-[700px]:px-3`}
-                      onClick={() => setActiveServerId(item?.data_id)}
+                      onClick={() => handleServerSelect(item)}
                     >
                       <p className="text-[13px] font-semibold">
                         {item.serverName}
@@ -126,7 +151,7 @@ function Servers({
                           ? "bg-[#ffbade] text-black"
                           : "bg-[#373646] text-white"
                       } max-[700px]:px-3`}
-                      onClick={() => setActiveServerId(item?.data_id)}
+                      onClick={() => handleServerSelect(item)}
                     >
                       <p className="text-[13px] font-semibold">
                         {item.serverName}

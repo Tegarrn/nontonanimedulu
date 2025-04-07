@@ -215,13 +215,13 @@ export default function Player({
     if (iframeUrl) {
       const url = new URL(iframeUrl);
       headers.Referer = url.origin + "/";
-    }else{
+    } else {
       headers.Referer = "https://megacloud.club/";
     }
     const art = new Artplayer({
       url:
         m3u8proxy[Math.floor(Math.random() * m3u8proxy?.length)] +
-        streamUrl +
+        encodeURIComponent(streamUrl) +
         "&headers=" +
         encodeURIComponent(JSON.stringify(headers)),
       container: artRef.current,

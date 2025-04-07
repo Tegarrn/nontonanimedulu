@@ -73,7 +73,7 @@ function Sidecard({ data, label, className, limit }) {
                     </div>
                   )}
                 <img
-                  src={item.poster}
+                  src={`https://wsrv.nl/?url=${item.poster}`}
                   alt={item.title}
                   className="flex-shrink-0 w-[60px] h-[75px] rounded-md object-cover cursor-pointer"
                   onClick={() => navigate(`/watch/${item.id}`)}

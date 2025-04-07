@@ -1,3 +1,3 @@
-const website_name = "Dauns";
+const website_name = "Zenime";
 
 export default website_name;

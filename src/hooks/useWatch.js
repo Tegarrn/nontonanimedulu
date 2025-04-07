@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import getAnimeInfo from "@/src/utils/getAnimeInfo.utils";
 import getStreamInfo from "@/src/utils/getStreamInfo.utils";
 import getEpisodes from "@/src/utils/getEpisodes.utils";
@@ -21,14 +21,67 @@ export const useWatch = (animeId, initialEpisodeId) => {
   const [thumbnail, setThumbnail] = useState(null);
   const [intro, setIntro] = useState(null);
   const [outro, setOutro] = useState(null);
-  const [episodeId, setEpisodeId] = useState(initialEpisodeId);
+  const [episodeId, setEpisodeId] = useState(null);
   const [activeEpisodeNum, setActiveEpisodeNum] = useState(null);
   const [activeServerId, setActiveServerId] = useState(null);
   const [serverLoading, setServerLoading] = useState(true);
   const [nextEpisodeSchedule, setNextEpisodeSchedule] = useState(null);
+  const isServerFetchInProgress = useRef(false);
+  const isStreamFetchInProgress = useRef(false);
 
   useEffect(() => {
-    const fetchNextEpisodeSchedule = async (animeId) => {
+    setEpisodes(null);
+    setEpisodeId(null);
+    setActiveEpisodeNum(null);
+    setServers(null);
+    setActiveServerId(null);
+    setStreamInfo(null);
+    setStreamUrl(null);
+    setSubtitles([]);
+    setThumbnail(null);
+    setIntro(null);
+    setOutro(null);
+    setBuffering(true);
+    setServerLoading(true);
+    setError(null);
+    setAnimeInfo(null);
+    setSeasons(null);
+    setTotalEpisodes(null);
+    setAnimeInfoLoading(true);
+    isServerFetchInProgress.current = false;
+    isStreamFetchInProgress.current = false;
+  }, [animeId]);
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        setAnimeInfoLoading(true);
+        const [animeData, episodesData] = await Promise.all([
+          getAnimeInfo(animeId, false),
+          getEpisodes(animeId),
+        ]);
+        setAnimeInfo(animeData?.data);
+        setSeasons(animeData?.seasons);
+        setEpisodes(episodesData?.episodes);
+        setTotalEpisodes(episodesData?.totalEpisodes);
+        const newEpisodeId =
+          initialEpisodeId ||
+          (episodesData?.episodes?.length > 0
+            ? episodesData.episodes[0].id.match(/ep=(\d+)/)?.[1]
+            : null);
+        setEpisodeId(newEpisodeId);
+      } catch (err) {
+        console.error("Error fetching initial data:", err);
+        setError(err.message || "An error occurred.");
+      } finally {
+        setAnimeInfoLoading(false);
+      }
+    };
+    fetchInitialData();
+  }, [animeId]);
+
+  useEffect(() => {
+    const fetchNextEpisodeSchedule = async () => {
       try {
         const data = await getNextEpisodeSchedule(animeId);
         setNextEpisodeSchedule(data);
@@ -36,77 +89,8 @@ export const useWatch = (animeId, initialEpisodeId) => {
         console.error("Error fetching next episode schedule:", err);
       }
     };
-    fetchNextEpisodeSchedule(animeId);
+    fetchNextEpisodeSchedule();
   }, [animeId]);
-
-  useEffect(() => {
-    const fetchAnimeInfo = async () => {
-      setAnimeInfoLoading(true);
-      try {
-        const data = await getAnimeInfo(animeId, false);
-        setAnimeInfo(data?.data);
-        setSeasons(data?.seasons);
-      } catch (err) {
-        console.error("Error fetching anime info:", err);
-        setError(err.message || "An error occurred.");
-      } finally {
-        setAnimeInfoLoading(false);
-      }
-    };
-    fetchAnimeInfo();
-  }, [animeId]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await getEpisodes(animeId);
-        setEpisodes(data?.episodes);
-        setTotalEpisodes(data?.totalEpisodes);
-      } catch (err) {
-        console.error("Error fetching episodes:", err);
-        setError(err.message || "An error occurred.");
-      }
-    })();
-  }, [animeId]);
-
-  useEffect(() => {
-    (async () => {
-      setServerLoading(true);
-      try {
-        const data = await getServers(animeId, episodeId);
-        const filteredServers = data?.filter(
-          (server) =>
-            server.serverName === "HD-1" || server.serverName === "HD-2"
-        );
-        setServers(filteredServers);
-        const initialServer =
-          data.find(
-            (server) => server.type === "sub" && server.serverName === "HD-1"
-          ) ||
-          data.find(
-            (server) => server.type === "sub" && server.serverName === "HD-2"
-          ) ||
-          data.find(
-            (server) => server.type === "dub" && server.serverName === "HD-1"
-          ) ||
-          data.find(
-            (server) => server.type === "dub" && server.serverName === "HD-2"
-          ) ||
-          data.find(
-            (server) => server.type === "raw" && server.serverName === "HD-1"
-          ) ||
-          data.find(
-            (server) => server.type === "raw" && server.serverName === "HD-2"
-          );
-        setServerLoading(false);
-        setActiveServerId(initialServer?.data_id);
-      } catch (error) {
-        console.error("Error fetching servers:", error);
-        setServerLoading(false);
-        setError(error.message || "An error occurred.");
-      }
-    })();
-  }, [animeId, episodeId]);
 
   useEffect(() => {
     if (!episodes || !episodeId) {
@@ -117,22 +101,82 @@ export const useWatch = (animeId, initialEpisodeId) => {
       const match = episode.id.match(/ep=(\d+)/);
       return match && match[1] === episodeId;
     });
-
     const newActiveEpisodeNum = activeEpisode ? activeEpisode.episode_no : null;
-
     if (activeEpisodeNum !== newActiveEpisodeNum) {
       setActiveEpisodeNum(newActiveEpisodeNum);
     }
-  }, [episodeId, episodes, activeEpisodeNum]);
+  }, [episodeId, episodes]);
 
   useEffect(() => {
-    const fetchStreamInfo = async () => {
-      if (!servers || !activeServerId) return;
-      setBuffering(true);
+    if (!episodeId || !episodes || isServerFetchInProgress.current) return;
 
+    const fetchServers = async () => {
+      isServerFetchInProgress.current = true;
+      setServerLoading(true);
+      try {
+        const data = await getServers(animeId, episodeId);
+        const filteredServers = data?.filter(
+          (server) =>
+            server.serverName === "HD-1" || server.serverName === "HD-2"
+        );
+        const savedServerName = localStorage.getItem("server_name");
+        const savedServerType = localStorage.getItem("server_type");
+        let initialServer;
+        initialServer = data.find(
+          (server) =>
+            server.serverName === savedServerName &&
+            server.type === savedServerType
+        );
+        if (!initialServer) {
+          initialServer = data.find(
+            (server) =>
+              server.serverName === savedServerName &&
+              server.type !== savedServerType
+          );
+        }
+        if (!initialServer) {
+          initialServer =
+            data.find(
+              (server) =>
+                server.type === savedServerType && server.serverName === "HD-1"
+            ) ||
+            data.find(
+              (server) =>
+                server.type === savedServerType && server.serverName === "HD-2"
+            );
+        }
+        if (!initialServer) {
+          initialServer = filteredServers[0];
+        }
+        setServers(filteredServers);
+        setActiveServerId(initialServer?.data_id);
+      } catch (error) {
+        console.error("Error fetching servers:", error);
+        setError(error.message || "An error occurred.");
+      } finally {
+        setServerLoading(false);
+        isServerFetchInProgress.current = false;
+      }
+    };
+    fetchServers();
+  }, [episodeId, episodes]);
+
+  // Fetch stream info only when episodeId, activeServerId, and servers are ready
+  useEffect(() => {
+    if (
+      !episodeId ||
+      !activeServerId ||
+      !servers ||
+      isServerFetchInProgress.current ||
+      isStreamFetchInProgress.current
+    )
+      return;
+
+    const fetchStreamInfo = async () => {
+      isStreamFetchInProgress.current = true;
+      setBuffering(true);
       try {
         const server = servers.find((srv) => srv.data_id === activeServerId);
-
         if (server) {
           const data = await getStreamInfo(
             animeId,
@@ -140,7 +184,6 @@ export const useWatch = (animeId, initialEpisodeId) => {
             server.serverName.toLowerCase(),
             server.type.toLowerCase()
           );
-
           setStreamInfo(data);
           setStreamUrl(data?.streamingLink?.link?.file || null);
           setIntro(data?.streamingLink?.intro || null);
@@ -150,7 +193,6 @@ export const useWatch = (animeId, initialEpisodeId) => {
               ?.filter((track) => track.kind === "captions")
               .map(({ file, label }) => ({ file, label })) || [];
           setSubtitles(subtitles);
-
           const thumbnailTrack = data?.streamingLink?.tracks?.find(
             (track) => track.kind === "thumbnails" && track.file
           );
@@ -163,12 +205,11 @@ export const useWatch = (animeId, initialEpisodeId) => {
         setError(err.message || "An error occurred.");
       } finally {
         setBuffering(false);
-        setServerLoading(false);
+        isStreamFetchInProgress.current = false;
       }
     };
-
     fetchStreamInfo();
-  }, [animeId, episodeId, activeServerId, servers]);
+  }, [episodeId, activeServerId, servers]);
 
   return {
     error,

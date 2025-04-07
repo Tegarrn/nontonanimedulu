@@ -88,14 +88,14 @@ const ContinueWatching = () => {
                 </button>
 
                 <Link
-                  to={`/watch/${item.animeInfo?.id}?ep=${item.episodeId}`}
+                  to={`/watch/${item?.id}?ep=${item.episodeId}`}
                   className="inline-block bg-[#2a2c31] absolute left-0 top-0 w-full h-full group"
                 >
                   <img
-                    src={item.animeInfo?.poster}
-                    alt={item.animeInfo?.title}
+                    src={`https://wsrv.nl/?url=${item?.poster}`}
+                    alt={item?.title}
                     className="block w-full h-full object-cover transition-all duration-300 ease-in-out group-hover:blur-[4px]"
-                    title={item.animeInfo?.title}
+                    title={item?.title}
                     loading="lazy"
                   />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -105,8 +105,7 @@ const ContinueWatching = () => {
                     />
                   </div>
                 </Link>
-                {(item.animeInfo?.animeInfo?.tvInfo?.rating === "18+" ||
-                  item?.animeInfo?.adultContent === true) && (
+                {item?.adultContent === true && (
                   <div className="text-white px-2 rounded-md bg-[#FF5700] absolute top-2 left-2 flex items-center justify-center text-[14px] font-bold">
                     18+
                   </div>
@@ -114,8 +113,8 @@ const ContinueWatching = () => {
                 <div className="absolute bottom-0 left-0 flex flex-col gap-y-2 right-0 p-2 bg-gradient-to-t from-black via-black/80 to-transparent max-[450px]:gap-y-1">
                   <p className="text-white text-md font-bold text-left truncate max-[450px]:text-sm">
                     {language === "EN"
-                      ? item.animeInfo?.title
-                      : item.animeInfo?.japanese_title}
+                      ? item?.title
+                      : item?.japanese_title}
                   </p>
                   <p className="text-gray-300 text-sm font-semibold text-left max-[450px]:text-[12px]">
                     Episode {item.episodeNum}

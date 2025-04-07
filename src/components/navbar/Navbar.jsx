@@ -127,7 +127,7 @@ function Navbar() {
             </div>
           </div>
           <Link
-            to=""
+            to="https://t.me/zenime_discussion"
             className="flex flex-col gap-y-1 items-center cursor-pointer"
           >
             <FaTelegramPlane

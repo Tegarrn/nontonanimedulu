@@ -75,7 +75,6 @@ const Schedule = () => {
         setscheduleData(Array.isArray(parsedData) ? parsedData : []);
       } else {
         const data = await getSchedInfo(date);
-        console.log(data);
         setscheduleData(Array.isArray(data) ? data : []);
         localStorage.setItem(`schedule-${date}`, JSON.stringify(data || []));
       }
@@ -185,11 +184,7 @@ const Schedule = () => {
         <div className="w-full h-[70px] flex justify-center items-center">
           <BouncingLoader />
         </div>
-      ) : !scheduleData ? (
-        <div className="w-full h-[70px] flex justify-center items-center mt-5 text-xl">
-          No data to display
-        </div>
-      ) : scheduleData.length === 0 ? (
+      ) : !scheduleData || scheduleData.length === 0 ? (
         <div className="w-full h-[70px] flex justify-center items-center mt-5 text-xl">
           No data to display
         </div>

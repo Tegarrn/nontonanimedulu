@@ -1,3 +1,3 @@
-const logoTitle="Da1uns"
+const logoTitle="Zen!me"
 
 export default logoTitle;

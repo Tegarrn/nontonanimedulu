@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useParams, Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useHomeInfo } from "@/src/context/HomeInfoContext";
@@ -31,6 +31,7 @@ export default function Watch() {
   const [tags, setTags] = useState([]);
   const { language } = useLanguage();
   const { homeInfo } = useHomeInfo();
+  const isFirstSet = useRef(true);
   const [showNextEpisodeSchedule, setShowNextEpisodeSchedule] = useState(true);
   const {
     // error,
@@ -65,18 +66,30 @@ export default function Watch() {
     autoNext,
     setAutoNext,
   } = useWatchControl();
+  // Set episodeId to first episode if not provided in URL
   useEffect(() => {
-    if (!initialEpisodeId && episodes && episodes.length > 0 && !episodeId) {
+    if (!episodeId && episodes && episodes.length > 0) {
       const firstEpisodeId = episodes[0].id.match(/ep=(\d+)/)?.[1];
       setEpisodeId(firstEpisodeId);
-      window.history.replaceState(
-        {},
-        "",
-        `/watch/${animeId}?ep=${firstEpisodeId}`
-      );
     }
-  }, [initialEpisodeId, episodes, episodeId, animeId]);
+  }, [episodes, episodeId]);
 
+  // Handle URL updates when episodeId changes
+  useEffect(() => {
+    if (episodeId) {
+      const newUrl = `/watch/${animeId}?ep=${episodeId}`;
+      if (isFirstSet.current) {
+        // Initial load: replace history entry
+        navigate(newUrl, { replace: true });
+        isFirstSet.current = false;
+      } else {
+        // Subsequent changes: push new history entry
+        navigate(newUrl);
+      }
+    }
+  }, [episodeId, animeId, navigate]);
+
+  // Update document title
   useEffect(() => {
     if (animeInfo) {
       document.title = `Watch ${animeInfo.title} English Sub/Dub online Free on ${website_name}`;
@@ -86,41 +99,13 @@ export default function Watch() {
     };
   }, [animeId]);
 
+  // Redirect if no episodes
   useEffect(() => {
-    if (totalEpisodes !== null) {
-      if (totalEpisodes === 0) {
-        navigate(`/${animeId}`);
-      }
+    if (totalEpisodes !== null && totalEpisodes === 0) {
+      navigate(`/${animeId}`);
     }
-  }, [streamInfo, episodeId, animeId, totalEpisodes]);
+  }, [streamInfo, episodeId, animeId, totalEpisodes, navigate]);
 
-  useEffect(() => {
-    if (animeId) {
-      const newEpisodeId = queryParams.get("ep");
-      if (!newEpisodeId && episodes && episodes.length > 0) {
-        const firstEpisodeId = episodes[0].id.match(/ep=(\d+)/)?.[1];
-        setEpisodeId(firstEpisodeId);
-        window.history.replaceState(
-          {},
-          "",
-          `/watch/${animeId}?ep=${firstEpisodeId}`
-        );
-      } else {
-        setEpisodeId(newEpisodeId);
-        window.history.replaceState(
-          {},
-          "",
-          `/watch/${animeId}?ep=${newEpisodeId}`
-        );
-      }
-    }
-  }, [animeId, episodes]);
-  useEffect(() => {
-    if (episodeId) {
-      const newUrl = `/watch/${animeId}?ep=${episodeId}`;
-      window.history.pushState({}, "", newUrl);
-    }
-  }, [episodeId]);
   useEffect(() => {
     const adjustHeight = () => {
       if (window.innerWidth > 1200) {
@@ -189,7 +174,7 @@ export default function Watch() {
         <img
           src={
             !animeInfoLoading
-              ? animeInfo?.poster
+              ? `https://wsrv.nl/?url=${animeInfo?.poster}`
               : "https://i.postimg.cc/rFZnx5tQ/2-Kn-Kzog-md.webp"
           }
           alt={`${animeInfo?.title} Poster`}
@@ -325,7 +310,7 @@ export default function Watch() {
                         </p>
                         <div className="absolute inset-0 z-10 bg-[url('https://i.postimg.cc/pVGY6RXd/thumb.png')] bg-repeat"></div>
                         <img
-                          src={season.season_poster}
+                          src={`https://wsrv.nl/?url=${season.season_poster}`}
                           alt=""
                           className="w-full h-full object-cover blur-[3px] opacity-50"
                         />
@@ -372,7 +357,7 @@ export default function Watch() {
           <div className="flex flex-col gap-y-4 items-start ml-8 max-[1400px]:ml-0 max-[1400px]:mt-10 max-[1400px]:flex-row max-[1400px]:gap-x-6 max-[1024px]:px-[30px] max-[1024px]:mt-8 max-[500px]:mt-4 max-[500px]:px-4">
             {animeInfo && animeInfo?.poster ? (
               <img
-                src={animeInfo?.poster}
+                src={`https://wsrv.nl/?url=${animeInfo?.poster}`}
                 alt=""
                 className="w-[100px] h-[150px] object-cover max-[500px]:w-[70px] max-[500px]:h-[90px]"
               />

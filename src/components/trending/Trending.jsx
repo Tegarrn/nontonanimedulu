@@ -51,7 +51,7 @@ const Trending = ({ trending }) => {
                     className="inline-block bg-[#2a2c31] absolute w-auto left-[40px] right-0 top-0 bottom-0 max-[575px]:left-0 max-[575px]:top-0 max-[575px]:bottom-0"
                   >
                     <img
-                      src={item.poster}
+                      src={`https://wsrv.nl/?url=${item.poster}`}
                       alt={item.title}
                       className="block w-full h-full object-cover hover:cursor-pointer"
                       title={item.title}
